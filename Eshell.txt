@@ -1,55 +1,47 @@
-savely@savelyPC:~/erlang/hw07$ erl
+savely@savelyPC:~/erlang/hw08$ erl
 Erlang/OTP 25 [erts-13.2.2.5] [source] [64-bit] [smp:12:12] [ds:12:12:10] [async-threads:1] [jit:ns]
 
 Eshell V13.2.2.5  (abort with ^G)
-1> self().
-<0.82.0>
-2> keylist_manager:start().
-{ok,<0.85.0>,#Ref<0.1485365036.3239051267.168076>}
-3> whereis(keylist_manager).
-<0.85.0>
-4> keylist_manager ! {self(), start_child, keylist1}. 
-{<0.82.0>,start_child,keylist1}
-Child process started keylist1, <0.89.0>
-5> keylist_manager ! {self(), start_child, keylist2}.
-Child process started keylist2, <0.90.0>
-{<0.82.0>,start_child,keylist2}
-6> keylist_manager ! {self(), start_child, keylist3}.
-Child process started keylist3, <0.92.0>
-{<0.82.0>,start_child,keylist3}
-7> flush(). 
-Shell got {ok,<0.89.0>}
-Shell got {ok,<0.90.0>}
-Shell got {ok,<0.92.0>}
+1> keylist_manager:start().
+{ok,<0.84.0>,#Ref<0.474576821.1009254407.218473>}
+2> keylist_manager:start_child(#{name => keylist1, restart => permanent}).
+Child process started keylist1 permanent, <0.86.0>
 ok
-8> keylist_manager ! {self(), get_state}.
-{<0.82.0>,get_state}
-9> flush().                              
-Shell got [keylist3,keylist2,keylist1]
+3> keylist_manager:start_child(#{name => keylist2, restart => temporary}).
+Child process started keylist2 temporary, <0.88.0>
 ok
-10> keylist3 ! test.
-test
-11> keylist3 ! test2.
-test2
-12> exit(<0.89.0>, error).
-Trap: child process <0.89.0> terminated: error
+4> keylist_manager:get_names().
+[keylist2,keylist1]
+5> keylist:add(keylist1, key1, "value1", "comment1").
+ok
+6> keylist:is_member(keylist1, key1).
 true
-13> keylist_manager ! {self(), get_state}.
-{<0.82.0>,get_state}
-14> flush().                              
-Shell got [keylist3,keylist2]
+7> keylist:is_member(keylist1, key2).
+false
+8> keylist:find(keylist1, key1).
+{ok,{key1,"value1","comment1"}}
+9> Pid1 = whereis(keylist1).
+<0.86.0>
+10> exit(Pid1, error).
+Trap: child process <0.86.0> terminated: error
+true
+Restarting permanent process keylist1
+11> whereis(keylist1).
+<0.97.0>
+12> Pid2 = whereis(keylist2).
+<0.88.0>
+13> exit(Pid2, error).
+Trap: child process <0.88.0> terminated: error
+true
+14> whereis(keylist2).
+undefined
+15> keylist_manager:get_names().
+[keylist1]
+16> keylist_manager:stop_child(keylist1).
+Trap: child process <0.97.0> terminated: normal
 ok
-15> keylist_manager ! stop.
+17> keylist_manager:get_names(). 
+[]
+18> keylist_manager:stop().
 Server terminated
-stop
-16> whereis(keylist2).
-undefined
-17> whereis(keylist3).
-undefined
-18> keylist_manager:start().
-{ok,<0.105.0>,#Ref<0.1485365036.3239051267.168170>}
-19> exit(<0.105.0>, kill).    
-true
-20> flush().
-Shell got {'DOWN',#Ref<0.1485365036.3239051267.168170>,process,<0.105.0>,killed}
 ok
